@@ -2,8 +2,8 @@ import { createGlobalStyle } from 'styled-components';
 import { GameProvider } from './store/gameContext';
 import { Board } from './components/Board';
 import { LoadingScreen } from './components/LoadingScreen';
-import { TestUtils } from './components/TestUtils';
-import { DevToolbar } from './components/DevToolbar';
+import { Sidebar } from './components/Sidebar';
+import { DevToolsContainer } from './components/DevTools';
 
 const GlobalStyle = createGlobalStyle`
   * {
@@ -20,6 +20,17 @@ const GlobalStyle = createGlobalStyle`
     align-items: center;
     min-height: 100vh;
   }
+
+  /* Add margin to the left side for the sidebar */
+  .app-container {
+    margin-left: 40px; /* Initial width of closed sidebar */
+    transition: margin-left 0.3s ease;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
 `;
 
 function App() {
@@ -30,17 +41,15 @@ function App() {
     <>
       <GlobalStyle />
       <LoadingScreen />
-      <GameProvider>
-        <Board />
-      </GameProvider>
+      <Sidebar />
+      <div className="app-container">
+        <GameProvider>
+          <Board />
+        </GameProvider>
+      </div>
       
       {/* Development Tools - only visible in dev mode */}
-      {isDev && (
-        <>
-          <DevToolbar />
-          <TestUtils />
-        </>
-      )}
+      {isDev && <DevToolsContainer />}
     </>
   );
 }

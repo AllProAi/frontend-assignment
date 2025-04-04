@@ -12,9 +12,9 @@ export const TIMING_CONFIG = {
   LOCK_DELAY: 200           // Delay before locking a piece that has landed
 };
 
-// Tetromino generation
+// Tetromino generation config
 export const TETROMINO_CONFIG = {
-  USE_FRESH_BAG_EACH_TIME: true  // Use 7-bag system for fair distribution
+  QUEUE_SIZE: 14 // Keep 2 complete sets (7*2=14) in the queue by default
 };
 
 // Tetromino definitions with shapes and colors
@@ -101,5 +101,5 @@ export const resetToDefaults = () => {
   GRID_CONFIG.HEIGHT = 20;
   TIMING_CONFIG.AUTO_DROP_INTERVAL = 1000;
   TIMING_CONFIG.LOCK_DELAY = 200;
-  TETROMINO_CONFIG.USE_FRESH_BAG_EACH_TIME = true;
+  TETROMINO_CONFIG.QUEUE_SIZE = 14;
 }; 

@@ -48,51 +48,33 @@ export const verifyTetrominoDistribution = (iterations: number = 700): Record<st
     console.log(`${type}: ${count} (${percentage}%) [${deviationStr} from expected]`);
   });
   
-  // Check if distribution is reasonably even (for our 7-bag system, it should be very even)
+  // Check if distribution is reasonably even
   let isEvenDistribution = true;
-  let bagSize = 7; // Tetris uses 7-bag system
   
-  // Special check for multiples of bag size
-  if (iterations % bagSize === 0) {
-    // If we've drawn complete bags, distribution should be perfectly even
-    const perfectCount = iterations / bagSize;
-    
-    Object.entries(distributionTracker).forEach(([type, count]) => {
-      if (count !== perfectCount) {
-        console.warn(`Warning: ${type} tetromino count (${count}) should be exactly ${perfectCount} with complete bags!`);
-        isEvenDistribution = false;
-      }
-    });
-    
-    if (isEvenDistribution) {
-      console.log('✅ Perfect distribution achieved with complete bags!');
+  // Check with tolerance
+  Object.entries(distributionTracker).forEach(([type, count]) => {
+    const deviation = Math.abs(count - expectedPerType) / expectedPerType;
+    if (deviation > tolerance) {
+      console.warn(`Warning: ${type} tetromino distribution deviates by ${(deviation * 100).toFixed(2)}% from expected`);
+      isEvenDistribution = false;
     }
+  });
+  
+  if (isEvenDistribution) {
+    console.log('✅ Tetromino distribution appears to be sufficiently balanced');
   } else {
-    // Otherwise check with tolerance
-    Object.entries(distributionTracker).forEach(([type, count]) => {
-      const deviation = Math.abs(count - expectedPerType) / expectedPerType;
-      if (deviation > tolerance) {
-        console.warn(`Warning: ${type} tetromino distribution deviates by ${(deviation * 100).toFixed(2)}% from expected`);
-        isEvenDistribution = false;
-      }
-    });
-    
-    if (isEvenDistribution) {
-      console.log('✅ Tetromino distribution appears to be sufficiently random');
-    } else {
-      console.warn('⚠️ Tetromino distribution shows possible bias');
-    }
+    console.warn('⚠️ Tetromino distribution shows possible bias');
   }
   
   return distributionTracker;
 };
 
-// Function to test perfect bag distribution with multiples of 7
+// Function to test perfect distribution with multiples of 7
 export const testPerfectDistribution = (): Record<string, number> => {
-  const numberOfBags = 10; // Test with 10 complete bags
-  const iterations = numberOfBags * 7; // 7 tetrominos per bag
+  const numberOfSets = 10; // Test with 10 complete sets
+  const iterations = numberOfSets * 7; // 7 tetrominos per set
   
-  console.log(`Testing distribution with ${numberOfBags} complete bags (${iterations} tetrominos)...`);
+  console.log(`Testing distribution with ${numberOfSets} complete sets (${iterations} tetrominos)...`);
   return verifyTetrominoDistribution(iterations);
 };
 

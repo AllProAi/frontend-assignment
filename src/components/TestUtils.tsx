@@ -1,21 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { runTetrominoGenerationTest, verifyTetrominoDistribution } from '../utils/gameLogic/tetrominoUtils';
 
 const TestContainer = styled.div`
-  position: fixed;
-  bottom: 10px;
-  right: 10px;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.5);
   color: white;
-  padding: 10px;
+  padding: 15px;
   border-radius: 5px;
   font-family: monospace;
   font-size: 12px;
-  z-index: 1000;
-  max-width: 400px;
-  max-height: 300px;
-  overflow: auto;
+  max-width: 100%;
+  margin-top: 15px;
 `;
 
 const Button = styled.button`
@@ -37,24 +32,19 @@ const TestResults = styled.pre`
   margin-top: 10px;
   font-size: 11px;
   white-space: pre-wrap;
+  max-height: 200px;
+  overflow: auto;
+`;
+
+const TestHeader = styled.h3`
+  color: #6e45e2;
+  margin-top: 0;
+  margin-bottom: 10px;
 `;
 
 export const TestUtils: React.FC = () => {
-  const [visible, setVisible] = useState(false);
   const [results, setResults] = useState<string>('');
   const [generationCount, setGenerationCount] = useState(0);
-  
-  useEffect(() => {
-    // Add a keyboard shortcut to toggle the test panel (Ctrl+Shift+T)
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'T') {
-        setVisible(prev => !prev);
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
   
   // Test tetromino generation
   const testTetrominoGeneration = () => {
@@ -90,12 +80,10 @@ export const TestUtils: React.FC = () => {
     setGenerationCount(prev => prev + 100);
   };
   
-  if (!visible) return null;
-  
   return (
     <TestContainer>
       <div>
-        <h3>Tetromino Test Utils</h3>
+        <TestHeader>Tetromino Test Utils</TestHeader>
         <Button onClick={testTetrominoGeneration}>
           Test Random Generation (100 tetrominos)
         </Button>

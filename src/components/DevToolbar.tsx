@@ -12,13 +12,9 @@ import {
 } from '../config/gameConfig';
 
 const ToolbarContainer = styled.div`
-  position: fixed;
-  top: 10px;
-  right: 10px;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  z-index: 1000;
+  width: 100%;
 `;
 
 const ToolbarButton = styled.button`
@@ -257,7 +253,6 @@ export const DevToolbar: React.FC = () => {
   const [results, setResults] = useState<string>('');
   const [testCount, setTestCount] = useState(0);
   const [showShapes, setShowShapes] = useState(false);
-  const [useBagSystem, setUseBagSystem] = useState(TETROMINO_CONFIG.USE_FRESH_BAG_EACH_TIME);
   
   // Config state
   const [showConfig, setShowConfig] = useState(false);
@@ -265,12 +260,6 @@ export const DevToolbar: React.FC = () => {
   const [gridHeight, setGridHeight] = useState(GRID_CONFIG.HEIGHT);
   const [autoDropInterval, setAutoDropInterval] = useState(TIMING_CONFIG.AUTO_DROP_INTERVAL);
   const [lockDelay, setLockDelay] = useState(TIMING_CONFIG.LOCK_DELAY);
-
-  // Update config when toggle changes
-  useEffect(() => {
-    TETROMINO_CONFIG.USE_FRESH_BAG_EACH_TIME = useBagSystem;
-    console.log(`Tetromino generation mode: ${useBagSystem ? 'Fresh Bag Each Time' : 'Truly Random'}`);
-  }, [useBagSystem]);
 
   // Apply configuration changes
   const applyConfigChanges = () => {
@@ -288,8 +277,7 @@ export const DevToolbar: React.FC = () => {
     setResults('Configuration updated successfully!\n\nNew configuration:\n' + 
       `- Grid: ${GRID_CONFIG.WIDTH}x${GRID_CONFIG.HEIGHT}\n` +
       `- Auto-drop interval: ${TIMING_CONFIG.AUTO_DROP_INTERVAL}ms\n` +
-      `- Lock delay: ${TIMING_CONFIG.LOCK_DELAY}ms\n` +
-      `- Tetromino generation: ${TETROMINO_CONFIG.USE_FRESH_BAG_EACH_TIME ? 'Fresh Bag' : 'Truly Random'}`
+      `- Lock delay: ${TIMING_CONFIG.LOCK_DELAY}ms\n`
     );
     setShowResults(true);
   };
@@ -303,7 +291,6 @@ export const DevToolbar: React.FC = () => {
     setGridHeight(GRID_CONFIG.HEIGHT);
     setAutoDropInterval(TIMING_CONFIG.AUTO_DROP_INTERVAL);
     setLockDelay(TIMING_CONFIG.LOCK_DELAY);
-    setUseBagSystem(TETROMINO_CONFIG.USE_FRESH_BAG_EACH_TIME);
     
     // Show confirmation
     setResults('Configuration reset to defaults!');
@@ -315,7 +302,7 @@ export const DevToolbar: React.FC = () => {
     const originalConsoleLog = console.log;
     const originalConsoleWarn = console.warn;
     
-    let output = '';
+    let output = '=== TETROMINO DISTRIBUTION TEST ===\n\n';
     
     console.log = (...args) => {
       output += args.join(' ') + '\n';
@@ -347,43 +334,6 @@ export const DevToolbar: React.FC = () => {
     setTestCount(prev => prev + 100);
   };
   
-  // Add test for perfect bag distribution
-  const testBagDistribution = () => {
-    const originalConsoleLog = console.log;
-    const originalConsoleWarn = console.warn;
-    
-    let output = '=== 7-BAG SYSTEM TEST ===\n\n';
-    
-    console.log = (...args) => {
-      output += args.join(' ') + '\n';
-      originalConsoleLog(...args);
-    };
-    
-    console.warn = (...args) => {
-      output += '⚠️ ' + args.join(' ') + '\n';
-      originalConsoleWarn(...args);
-    };
-    
-    // Test perfect distribution with 70 tetrominos (10 complete bags)
-    const distribution = testPerfectDistribution();
-    
-    // Add some visual representation
-    output += '\nDistribution Chart:\n';
-    Object.entries(distribution).forEach(([type, count]) => {
-      const bars = '█'.repeat(Math.round(count / 5));
-      output += `${type.padEnd(2)}: ${bars} (${count})\n`;
-    });
-    
-    // Restore console
-    console.log = originalConsoleLog;
-    console.warn = originalConsoleWarn;
-    
-    // Update state
-    setResults(output);
-    setShowResults(true);
-    setTestCount(prev => prev + 70);
-  };
-  
   // Add position test
   const testStartPosition = () => {
     const originalConsoleLog = console.log;
@@ -398,17 +348,68 @@ export const DevToolbar: React.FC = () => {
     for (let i = 0; i < 5; i++) {
       const tetromino = createNewTetromino();
       const { x, y } = tetromino.position;
-      const isCorrect = x === 0 && y === 0;
+      const matrixWidth = tetromino.shape.matrix[0].length;
+      const expectedX = 0; // Expected position is top-left (0,0)
+      const isCorrect = x === expectedX && y === 0;
       
       output += `Tetromino #${i+1}:\n`;
-      output += `  Shape: ${tetromino.shape.color}\n`;
+      output += `  Shape: ${Object.keys(TETROMINOES).find(key => 
+        TETROMINOES[key].color === tetromino.shape.color
+      )}\n`;
+      output += `  Matrix Size: ${tetromino.shape.matrix.length}x${matrixWidth}\n`;
       output += `  Position: (${x}, ${y})\n`;
+      output += `  Expected Position: (${expectedX}, 0)\n`;
       output += `  Correct: ${isCorrect ? '✅' : '❌'}\n\n`;
     }
     
-    // Verify position is consistently at top-left
-    output += '\nVerification: ';
-    output += 'Tetrominos are spawning at the top-left corner (0,0) ✅\n';
+    // Restore console
+    console.log = originalConsoleLog;
+    
+    // Update state
+    setResults(output);
+    setShowResults(true);
+  };
+  
+  // Test the sequence system specifically
+  const testSequenceSystem = () => {
+    const originalConsoleLog = console.log;
+    let output = '=== SEQUENCE SYSTEM TEST ===\n\n';
+    
+    console.log = (...args) => {
+      output += args.join(' ') + '\n';
+      originalConsoleLog(...args);
+    };
+    
+    // Generate a 14-piece sequence (2 complete sets)
+    output += "Generating 14 tetrominos (should contain 2 complete sets):\n\n";
+    const pieceTypes: Record<string, number> = {};
+    const tetrominos = [];
+    
+    for (let i = 0; i < 14; i++) {
+      const tetromino = createNewTetromino();
+      const type = Object.keys(TETROMINOES).find(key => 
+        TETROMINOES[key].color === tetromino.shape.color
+      ) || 'Unknown';
+      
+      tetrominos.push(type);
+      pieceTypes[type] = (pieceTypes[type] || 0) + 1;
+    }
+    
+    // Log all pieces
+    for (let i = 0; i < tetrominos.length; i++) {
+      output += `Piece ${i+1}: ${tetrominos[i]}\n`;
+    }
+    
+    // Check distribution
+    output += "\nDistribution Summary:\n";
+    Object.entries(pieceTypes).forEach(([type, count]) => {
+      output += `${type}: ${count} pieces\n`;
+    });
+    
+    // Check if we have all 7 types at least once
+    const uniqueTypes = Object.keys(pieceTypes).length;
+    output += `\nUnique tetromino types: ${uniqueTypes} of 7 expected\n`;
+    output += `Each type appears exactly twice: ${Object.values(pieceTypes).every(count => count === 2) ? '✅' : '❌'}\n`;
     
     // Restore console
     console.log = originalConsoleLog;
@@ -561,29 +562,13 @@ export const DevToolbar: React.FC = () => {
         </ConfigPanelContainer>
       )}
       
-      {/* Generation Mode Toggle */}
-      <ToggleContainer>
-        <ToggleLabel>Generation Mode:</ToggleLabel>
-        <ToggleSwitch>
-          <ToggleInput 
-            type="checkbox" 
-            checked={useBagSystem}
-            onChange={(e) => setUseBagSystem(e.target.checked)}
-          />
-          <ToggleSlider />
-        </ToggleSwitch>
-        <ToggleLabel style={{ marginLeft: '10px' }}>
-          {useBagSystem ? 'Fresh Bag Each Time' : 'Truly Random'}
-        </ToggleLabel>
-      </ToggleContainer>
-      
       <ToolbarButton onClick={runTetrominoTest}>
         Test Generation
         {testCount > 0 && <Badge>{testCount}</Badge>}
       </ToolbarButton>
       
-      <ToolbarButton onClick={testBagDistribution}>
-        Test Bag System
+      <ToolbarButton onClick={testSequenceSystem}>
+        Test Sequence
       </ToolbarButton>
       
       <ToolbarButton onClick={testStartPosition}>
