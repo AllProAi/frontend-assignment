@@ -78,14 +78,18 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       
       const newTetromino = moveTetromino(state.activeTetromino, 'left');
       if (isValidPosition(state.grid, newTetromino)) {
-        // Update tetromino position
-        const updatedState = {
+        // Horizontal movement is allowed, even during lock delay
+        const newState = {
           ...state,
           activeTetromino: newTetromino
         };
         
-        // Check for obstacles below and update lock delay status
-        return checkAndUpdateLockDelay(updatedState);
+        // If we're not in lock delay, check if we should start one
+        // If already in lock delay, keep the existing lock delay status
+        if (!state.lockDelay) {
+          return checkAndUpdateLockDelay(newState);
+        }
+        return newState;
       }
       return state;
     }
@@ -95,20 +99,31 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       
       const newTetromino = moveTetromino(state.activeTetromino, 'right');
       if (isValidPosition(state.grid, newTetromino)) {
-        // Update tetromino position
-        const updatedState = {
+        // Horizontal movement is allowed, even during lock delay
+        const newState = {
           ...state,
           activeTetromino: newTetromino
         };
         
-        // Check for obstacles below and update lock delay status
-        return checkAndUpdateLockDelay(updatedState);
+        // If we're not in lock delay, check if we should start one
+        // If already in lock delay, keep the existing lock delay status
+        if (!state.lockDelay) {
+          return checkAndUpdateLockDelay(newState);
+        }
+        return newState;
       }
       return state;
     }
 
     case ActionType.MOVE_DOWN: {
       if (!state.activeTetromino || !state.isPlaying) return state;
+      
+      // If we're in lock delay and trying to move down, we should 
+      // just place the piece immediately
+      if (state.lockDelay) {
+        console.log('Manual down during lock delay - placing tetromino');
+        return gameReducer(state, { type: ActionType.PLACE_TETROMINO });
+      }
       
       const newTetromino = moveTetromino(state.activeTetromino, 'down');
       if (isValidPosition(state.grid, newTetromino)) {
@@ -122,9 +137,35 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         return checkAndUpdateLockDelay(updatedState);
       }
       
-      // Can't move down further, which means we're at an obstacle
-      // If not already in lock delay, start it
-      if (!state.lockDelay) {
+      // Can't move down further, start lock delay
+      return {
+        ...state,
+        lockDelay: true,
+        lockDelayTimestamp: Date.now()
+      };
+    }
+
+    case ActionType.AUTO_DROP: {
+      if (!state.isPlaying || !state.activeTetromino) return state;
+      
+      // FIRST: Check if we're already in lock delay
+      if (state.lockDelay && state.lockDelayTimestamp) {
+        const now = Date.now();
+        if (now - state.lockDelayTimestamp >= LOCK_DELAY_MS) {
+          // Force immediate placement when lock delay expires
+          console.log('Lock delay expired, placing tetromino');
+          return gameReducer(state, { type: ActionType.PLACE_TETROMINO });
+        }
+        
+        // If still in lock delay, do nothing in auto drop
+        // This gives priority to the lock delay countdown
+        return state;
+      }
+      
+      // SECOND: If not in lock delay, check if we should be
+      const shouldBeLocked = hasObstacleBelow(state.grid, state.activeTetromino);
+      if (shouldBeLocked) {
+        console.log('Obstacle detected, starting lock delay');
         return {
           ...state,
           lockDelay: true,
@@ -132,51 +173,25 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         };
       }
       
-      return state;
-    }
-
-    case ActionType.AUTO_DROP: {
-      if (!state.isPlaying) return state;
+      // THIRD: If no obstacles below, proceed with normal drop
+      const newTetromino = moveTetromino(state.activeTetromino, 'down');
       
-      // If we're in lock delay, check if the time is up
-      if (state.lockDelay && state.lockDelayTimestamp) {
-        const now = Date.now();
-        if (now - state.lockDelayTimestamp >= LOCK_DELAY_MS) {
-          // Lock delay time is up, place the tetromino
-          // This will happen regardless of user controls
-          return gameReducer(state, { type: ActionType.FINISH_LOCK_DELAY });
-        }
-        
-        // Still in lock delay, don't auto drop
-        return state;
+      if (isValidPosition(state.grid, newTetromino)) {
+        // Can move down
+        return {
+          ...state,
+          activeTetromino: newTetromino
+        };
+      } else {
+        // Can't move down - must have hit something
+        // Start lock delay
+        console.log('Cannot move down, starting lock delay');
+        return {
+          ...state,
+          lockDelay: true,
+          lockDelayTimestamp: Date.now()
+        };
       }
-      
-      // Normal auto drop behavior
-      if (state.activeTetromino) {
-        const newTetromino = moveTetromino(state.activeTetromino, 'down');
-        
-        if (isValidPosition(state.grid, newTetromino)) {
-          // Can move down
-          const updatedState = {
-            ...state,
-            activeTetromino: newTetromino
-          };
-          
-          // Check for obstacles below and update lock delay status
-          return checkAndUpdateLockDelay(updatedState);
-        } else {
-          // Can't move down - start lock delay if not already started
-          if (!state.lockDelay) {
-            return {
-              ...state,
-              lockDelay: true,
-              lockDelayTimestamp: Date.now()
-            };
-          }
-        }
-      }
-      
-      return state;
     }
     
     case ActionType.START_LOCK_DELAY: {
@@ -204,7 +219,8 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
     }
     
     case ActionType.FINISH_LOCK_DELAY: {
-      // End lock delay and place the tetromino
+      // End lock delay and immediately place the tetromino
+      console.log('Finishing lock delay and placing tetromino');
       return gameReducer({
         ...state,
         lockDelay: false,

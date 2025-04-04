@@ -31,6 +31,17 @@ export const Board: React.FC = () => {
     isPlaying ? TIMING_CONFIG.AUTO_DROP_INTERVAL : null
   );
 
+  // Add a more frequent interval to ensure lock delay is checked more often
+  useInterval(
+    () => {
+      // Only check if game is playing and we're in lock delay
+      if (isPlaying && state.lockDelay) {
+        dispatch({ type: ActionType.AUTO_DROP });
+      }
+    },
+    isPlaying ? 50 : null // Check more frequently to ensure responsive lock delay
+  );
+
   // Render the game board with active tetromino
   const renderBoard = useCallback(() => {
     // Clone the current grid
