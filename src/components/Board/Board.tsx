@@ -98,18 +98,21 @@ export const Board: React.FC = () => {
   return (
     <BoardContainer>
       <GameTitle>Testris</GameTitle>
+      
+      {/* Start button moved to top */}
+      {isGameOver ? (
+        <StartButton onClick={handleResetGame}>New Game</StartButton>
+      ) : (
+        <StartButton onClick={handleStartGame} disabled={isPlaying}>
+          {isPlaying ? 'Playing...' : 'Start Game'}
+        </StartButton>
+      )}
+      
       <GameBoard>{renderBoard()}</GameBoard>
       
       <GameControlsContainer>
-        {isGameOver ? (
-          <>
-            <GameStatus>Game Over</GameStatus>
-            <StartButton onClick={handleResetGame}>New Game</StartButton>
-          </>
-        ) : (
-          <StartButton onClick={handleStartGame} disabled={isPlaying}>
-            {isPlaying ? 'Playing...' : 'Start Game'}
-          </StartButton>
+        {isGameOver && (
+          <GameStatus>Game Over</GameStatus>
         )}
       </GameControlsContainer>
 

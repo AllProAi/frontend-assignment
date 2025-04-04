@@ -58,6 +58,7 @@ export const StartButton = styled.button`
   cursor: pointer;
   transition: background-color 0.3s;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  margin-bottom: 15px;
 
   &:hover {
     background-color: #45a049;
