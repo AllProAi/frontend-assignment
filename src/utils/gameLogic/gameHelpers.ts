@@ -122,4 +122,21 @@ export const clearCompletedRows = (grid: Grid): Grid => {
 // Check if game is over (can't place new tetromino)
 export const isGameOver = (grid: Grid, tetromino: Tetromino): boolean => {
   return !isValidPosition(grid, tetromino);
+};
+
+// Check if the tetromino would land in the next step
+export const wouldTetrominoLand = (grid: Grid, tetromino: Tetromino): boolean => {
+  // Create a copy of the tetromino moved down by one position
+  const nextPosition = {
+    ...tetromino.position,
+    y: tetromino.position.y + 1
+  };
+  
+  const tetrominoBelow = {
+    ...tetromino,
+    position: nextPosition
+  };
+  
+  // If the position below is invalid, it means the tetromino would land
+  return !isValidPosition(grid, tetrominoBelow);
 }; 

@@ -1,5 +1,5 @@
 import React, { useReducer, ReactNode } from 'react';
-import { GameState, GameAction, ActionType } from '../models/types';
+import { GameState, GameAction, ActionType, LOCK_DELAY_MS } from '../models/types';
 import {
   createEmptyGrid,
   createNewTetromino,
@@ -7,17 +7,21 @@ import {
   moveTetromino,
   placeTetromino,
   clearCompletedRows,
-  isGameOver
+  isGameOver,
+  wouldTetrominoLand
 } from '../utils/gameLogic/gameHelpers';
 import { GameContext } from './gameContextTypes';
+import { INITIAL_STATE } from '../config/gameConfig';
 
 // Initial game state
 const initialState: GameState = {
   grid: createEmptyGrid(),
   activeTetromino: null,
   nextTetromino: null,
-  isPlaying: false,
-  isGameOver: false
+  isPlaying: INITIAL_STATE.IS_PLAYING,
+  isGameOver: INITIAL_STATE.IS_GAME_OVER,
+  lockDelay: false,
+  lockDelayTimestamp: null
 };
 
 // Game reducer function
@@ -31,7 +35,9 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         activeTetromino: newTetromino,
         nextTetromino: createNewTetromino(),
         isPlaying: true,
-        isGameOver: false
+        isGameOver: false,
+        lockDelay: false,
+        lockDelayTimestamp: null
       };
     }
 
@@ -40,6 +46,16 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       
       const newTetromino = moveTetromino(state.activeTetromino, 'left');
       if (isValidPosition(state.grid, newTetromino)) {
+        // If we're in lock delay and successfully moved, cancel the lock delay
+        if (state.lockDelay) {
+          return {
+            ...state,
+            activeTetromino: newTetromino,
+            lockDelay: false,
+            lockDelayTimestamp: null
+          };
+        }
+        
         return {
           ...state,
           activeTetromino: newTetromino
@@ -53,6 +69,16 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       
       const newTetromino = moveTetromino(state.activeTetromino, 'right');
       if (isValidPosition(state.grid, newTetromino)) {
+        // If we're in lock delay and successfully moved, cancel the lock delay
+        if (state.lockDelay) {
+          return {
+            ...state,
+            activeTetromino: newTetromino,
+            lockDelay: false,
+            lockDelayTimestamp: null
+          };
+        }
+        
         return {
           ...state,
           activeTetromino: newTetromino
@@ -66,18 +92,104 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       
       const newTetromino = moveTetromino(state.activeTetromino, 'down');
       if (isValidPosition(state.grid, newTetromino)) {
+        // If we were in lock delay, cancel it since we moved down
+        if (state.lockDelay) {
+          return {
+            ...state,
+            activeTetromino: newTetromino,
+            lockDelay: false,
+            lockDelayTimestamp: null
+          };
+        }
+        
         return {
           ...state,
           activeTetromino: newTetromino
         };
       }
-      // If can't move down further, place the tetromino
-      return gameReducer(state, { type: ActionType.PLACE_TETROMINO });
+      
+      // If can't move down further and we're not already in lock delay,
+      // start the lock delay
+      if (!state.lockDelay) {
+        return {
+          ...state,
+          lockDelay: true,
+          lockDelayTimestamp: Date.now()
+        };
+      }
+      
+      return state;
     }
 
     case ActionType.AUTO_DROP: {
       if (!state.isPlaying) return state;
-      return gameReducer(state, { type: ActionType.MOVE_DOWN });
+      
+      // If we're in lock delay, check if the time is up
+      if (state.lockDelay && state.lockDelayTimestamp) {
+        const now = Date.now();
+        if (now - state.lockDelayTimestamp >= LOCK_DELAY_MS) {
+          // Lock delay time is up, place the tetromino
+          return gameReducer(state, { type: ActionType.FINISH_LOCK_DELAY });
+        }
+        
+        // Still in lock delay, don't auto drop
+        return state;
+      }
+      
+      // Normal auto drop behavior
+      if (state.activeTetromino) {
+        const newTetromino = moveTetromino(state.activeTetromino, 'down');
+        
+        if (isValidPosition(state.grid, newTetromino)) {
+          // Can move down
+          return {
+            ...state,
+            activeTetromino: newTetromino
+          };
+        } else {
+          // Would land, start lock delay
+          return {
+            ...state,
+            lockDelay: true,
+            lockDelayTimestamp: Date.now()
+          };
+        }
+      }
+      
+      return state;
+    }
+    
+    case ActionType.START_LOCK_DELAY: {
+      if (!state.activeTetromino || !state.isPlaying || state.lockDelay) {
+        return state;
+      }
+      
+      return {
+        ...state,
+        lockDelay: true,
+        lockDelayTimestamp: Date.now()
+      };
+    }
+    
+    case ActionType.CANCEL_LOCK_DELAY: {
+      if (!state.lockDelay) {
+        return state;
+      }
+      
+      return {
+        ...state,
+        lockDelay: false,
+        lockDelayTimestamp: null
+      };
+    }
+    
+    case ActionType.FINISH_LOCK_DELAY: {
+      // End lock delay and place the tetromino
+      return gameReducer({
+        ...state,
+        lockDelay: false,
+        lockDelayTimestamp: null
+      }, { type: ActionType.PLACE_TETROMINO });
     }
 
     case ActionType.PLACE_TETROMINO: {
@@ -96,7 +208,9 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           grid: clearedGrid,
           activeTetromino: null,
           isPlaying: false,
-          isGameOver: true
+          isGameOver: true,
+          lockDelay: false,
+          lockDelayTimestamp: null
         };
       }
       
@@ -105,7 +219,9 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         ...state,
         grid: clearedGrid,
         activeTetromino: state.nextTetromino,
-        nextTetromino: createNewTetromino()
+        nextTetromino: createNewTetromino(),
+        lockDelay: false,
+        lockDelayTimestamp: null
       };
     }
 
@@ -122,7 +238,9 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       return {
         ...state,
         isPlaying: false,
-        isGameOver: true
+        isGameOver: true,
+        lockDelay: false,
+        lockDelayTimestamp: null
       };
     }
 

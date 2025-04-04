@@ -2,6 +2,8 @@ import { createGlobalStyle } from 'styled-components';
 import { GameProvider } from './store/gameContext';
 import { Board } from './components/Board';
 import { LoadingScreen } from './components/LoadingScreen';
+import { TestUtils } from './components/TestUtils';
+import { DevToolbar } from './components/DevToolbar';
 
 const GlobalStyle = createGlobalStyle`
   * {
@@ -21,6 +23,9 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 function App() {
+  // Check if we're in development mode
+  const isDev = import.meta.env.DEV;
+  
   return (
     <>
       <GlobalStyle />
@@ -28,6 +33,14 @@ function App() {
       <GameProvider>
         <Board />
       </GameProvider>
+      
+      {/* Development Tools - only visible in dev mode */}
+      {isDev && (
+        <>
+          <DevToolbar />
+          <TestUtils />
+        </>
+      )}
     </>
   );
 }

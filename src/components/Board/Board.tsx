@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { ActionType } from '../../models/types';
 import { useGameContext } from '../../store/gameContextTypes';
 import { useGameControls, useInterval } from '../../hooks/useGameControls';
+import { TIMING_CONFIG } from '../../config/gameConfig';
 import {
   BoardContainer,
   GameBoard,
@@ -22,12 +23,12 @@ export const Board: React.FC = () => {
   // Set up keyboard controls
   useGameControls(dispatch, isPlaying);
 
-  // Auto-drop tetromino every second
+  // Auto-drop tetromino using configured interval
   useInterval(
     () => {
       dispatch({ type: ActionType.AUTO_DROP });
     },
-    isPlaying ? 1000 : null
+    isPlaying ? TIMING_CONFIG.AUTO_DROP_INTERVAL : null
   );
 
   // Render the game board with active tetromino
