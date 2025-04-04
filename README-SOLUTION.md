@@ -1,8 +1,6 @@
-# Tetris Game
+Encord Learning Initiative for Visual Inference Processing Infrastructure
 
 A simple, playable implementation of Tetris built with React and TypeScript.
-
-![Tetris Game](./assets/grid.png)
 
 ## Features
 
@@ -54,16 +52,9 @@ src/
    ```
    pnpm dev
    ```
-4. Build for production:
-   ```
-   pnpm build
-   ```
-5. Preview production build:
-   ```
-   pnpm preview
-   ```
+4. Open your browser and navigate to the URL displayed in the terminal (typically http://localhost:5173)
 
-## Game Controls
+## Controls
 
 - **Left Arrow**: Move tetromino left
 - **Right Arrow**: Move tetromino right
@@ -78,17 +69,7 @@ src/
 - When a piece lands, it becomes part of the grid, and any completed rows are cleared.
 - The game ends when a new piece cannot be placed at the top of the grid.
 
-## Development Commands
-
-- `pnpm dev` - Start development server
-- `pnpm build` - Build for production
-- `pnpm preview` - Preview production build
-- `pnpm lint` - Run ESLint
-- `pnpm type-check` - Run TypeScript type checking
-- `pnpm validate` - Run all checks before deployment
-- `pnpm start` - Serve production build on port 8080
-
-## Future Enhancements (Beyond Current Scope)
+## Future Enhancements (Beyond Scope)
 
 - Piece rotation
 - Scoring system
@@ -100,4 +81,4 @@ src/
 
 ---
 
-This project was developed as part of the Encord frontend assignment, following the requirements to build a playable Tetris game with specific constraints.
+This project was developed as part of the Encord frontend assignment, following the requirements to build a playable Tetris game with specific constraints. 
