@@ -97,7 +97,7 @@ export const Board: React.FC = () => {
 
   return (
     <BoardContainer>
-      <GameTitle>Tetris</GameTitle>
+      <GameTitle>Testris</GameTitle>
       <GameBoard>{renderBoard()}</GameBoard>
       
       <GameControlsContainer>

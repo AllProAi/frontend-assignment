@@ -20,6 +20,10 @@ A simple, playable implementation of Tetris built with React and TypeScript.
 - Styled Components for styling
 - React Context API for state management
 
+## Documentation
+
+For detailed documentation about the codebase and development workflow, please refer to the [Developer Documentation](./docs/DEVELOPMENT.md).
+
 ## Project Structure
 
 ```
