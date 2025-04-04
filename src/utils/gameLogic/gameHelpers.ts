@@ -8,16 +8,15 @@ export const createEmptyGrid = (): Grid => {
   );
 };
 
-// Create a new tetromino at the top of the grid
+// Create a new tetromino at the top left of the grid
 export const createNewTetromino = (): Tetromino => {
   const shape = getRandomTetromino();
-  const width = shape.matrix[0].length;
   
   return {
     shape,
     position: {
-      // Center tetromino horizontally
-      x: Math.floor((GRID_WIDTH - width) / 2),
+      // Position at top left corner
+      x: 0,
       y: 0
     }
   };
