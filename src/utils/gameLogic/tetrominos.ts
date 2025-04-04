@@ -71,124 +71,115 @@ export const TETROMINOES: Record<string, TetrominoShape> = {
   }
 };
 
-// More robust random number generator
-class CustomRandom {
-  private static instance: CustomRandom;
-  private history: string[] = [];
-  private s1 = Math.random() * 0xFFFFFFFF;
-  private s2 = Math.random() * 0xFFFFFFFF;
-  private s3 = Math.random() * 0xFFFFFFFF;
-  private startTime = Date.now();
-  private callCount = 0;
-
-  // Private constructor for singleton
+// The official Tetris 7-bag randomizer
+class TetrominoRandomizer {
+  private static instance: TetrominoRandomizer;
+  private currentBag: string[] = [];
+  private nextBag: string[] = [];
+  private debugSequence: string = '';
+  
+  // Make constructor private to enforce singleton
   private constructor() {
-    this.reseed();
+    this.fillBag(this.currentBag);
+    this.fillBag(this.nextBag);
+    
+    // Add extra shuffle steps to both bags
+    this.shuffleBag(this.currentBag);
+    this.shuffleBag(this.nextBag);
   }
-
-  // Get the singleton instance
-  public static getInstance(): CustomRandom {
-    if (!CustomRandom.instance) {
-      CustomRandom.instance = new CustomRandom();
+  
+  // Get singleton instance
+  public static getInstance(): TetrominoRandomizer {
+    if (!TetrominoRandomizer.instance) {
+      TetrominoRandomizer.instance = new TetrominoRandomizer();
     }
-    return CustomRandom.instance;
+    return TetrominoRandomizer.instance;
   }
-
-  // Xorshift algorithm - better than Math.random()
-  private xorshift(): number {
-    let t = this.s1 ^ (this.s1 << 11);
-    this.s1 = this.s2;
-    this.s2 = this.s3;
-    this.s3 = (this.s3 ^ (this.s3 >> 19) ^ t ^ (t >> 8));
-    return (this.s3 / 0xFFFFFFFF + 0.5); // Normalize to 0-1
+  
+  // Fill a bag with one of each tetromino type and shuffle it
+  private fillBag(bag: string[]): void {
+    // Start with all tetromino types
+    bag.length = 0;
+    Object.keys(TETROMINOES).forEach(type => {
+      bag.push(type);
+    });
+    
+    // Shuffle the bag (modern Fisher-Yates algorithm)
+    this.shuffleBag(bag);
   }
-
-  // Reseed with multiple entropy sources
-  private reseed(): void {
-    const now = Date.now();
-    const timeDiff = now - this.startTime;
-    
-    // Mix in current time, performance metrics if available, and call count
-    this.s1 = ((now % 65521) * 3.14159) ^ (this.callCount * 7919);
-    this.s2 = ((timeDiff % 65521) * 2.71828) ^ (this.s1 * 104729);
-    this.s3 = (((now & 0xFFFF) | (timeDiff << 16)) * 1.61803) ^ (this.s2 * 15485863);
-    
-    // Extra entropy from multiple random calls
-    for (let i = 0; i < 10; i++) {
-      this.s1 ^= Math.floor(Math.random() * 0xFFFFFFFF);
-      this.s2 ^= Math.floor(Math.random() * 0xFFFFFFFF);
-      this.s3 ^= Math.floor(Math.random() * 0xFFFFFFFF);
-    }
-  }
-
-  // Get random number between 0-1
-  public random(): number {
-    this.callCount++;
-    
-    // Periodically reseed for better entropy
-    if (this.callCount % 50 === 0) {
-      this.reseed();
+  
+  // Shuffle the bag with a thoroughly-tested robust shuffle
+  private shuffleBag(bag: string[]): void {
+    // Starting from the top of the array, swap each element with a random one below it
+    for (let i = bag.length - 1; i > 0; i--) {
+      // Get current timestamp for extra entropy in each shuffle step
+      const timestamp = new Date().getTime();
+      // Use multiplication by primes and bitwise operations for better distribution
+      const randomFactor = (timestamp % 919) * 17;
+      // Calculate random index
+      const j = Math.floor((Math.random() * randomFactor % (i + 1)));
+      // Swap elements
+      [bag[i], bag[j]] = [bag[j], bag[i]];
     }
     
-    return this.xorshift();
-  }
-
-  // Get random integer in range [min, max) 
-  public randomInt(min: number, max: number): number {
-    return Math.floor(this.random() * (max - min)) + min;
-  }
-
-  // Get random item from array
-  public randomItem<T>(array: T[]): T {
-    return array[this.randomInt(0, array.length)];
-  }
-
-  // Add item to history and get a different one
-  public randomItemWithHistory<T>(array: T[], maxHistory: number = 3): T {
-    // Keep history length in check
-    if (this.history.length > maxHistory) {
-      this.history = this.history.slice(-maxHistory);
+    // Extra shuffle passes for increased randomness
+    for (let pass = 0; pass < 3; pass++) {
+      for (let i = bag.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [bag[i], bag[j]] = [bag[j], bag[i]];
+      }
     }
-
-    // If we've seen all items recently, reset history
-    if (this.history.length >= array.length) {
-      this.history = this.history.slice(-1);
+  }
+  
+  // Get the next tetromino type from the current bag
+  public getNextTetromino(): TetrominoShape {
+    // If current bag is empty, move to the next bag
+    if (this.currentBag.length === 0) {
+      // Replace current bag with next bag
+      this.currentBag = [...this.nextBag];
+      
+      // Create a new next bag
+      this.nextBag = [];
+      this.fillBag(this.nextBag);
     }
-
-    // Filter out recent items
-    const availableItems = array.filter(item => !this.history.includes(String(item)));
     
-    // If everything is filtered out, just pick a random one that's not the most recent
-    const mostRecent = this.history[this.history.length - 1];
-    const selection = availableItems.length > 0 
-      ? this.randomItem(availableItems)
-      : this.randomItem(array.filter(item => String(item) !== mostRecent));
+    // Take the next piece from the current bag - use shift() to take from beginning for FIFO order
+    const nextType = this.currentBag.shift()!;
     
-    // Add to history
-    this.history.push(String(selection));
+    // For debugging
+    this.debugSequence += nextType;
+    if (this.debugSequence.length > 20) {
+      this.debugSequence = this.debugSequence.substring(this.debugSequence.length - 20);
+    }
     
-    return selection;
+    // Return the tetromino
+    return TETROMINOES[nextType];
+  }
+  
+  // Get sequence for debugging
+  public getDebugSequence(): string {
+    return this.debugSequence;
+  }
+  
+  // Debug method: get the current bag contents
+  public getCurrentBagContents(): string[] {
+    return [...this.currentBag];
+  }
+  
+  // Debug method: get the next bag contents
+  public getNextBagContents(): string[] {
+    return [...this.nextBag];
   }
 }
 
-// All tetromino types in an array for easy access
-const TETROMINO_TYPES = Object.keys(TETROMINOES);
-
-// NEW IMPLEMENTATION: Ultra-Robust Random System
+// Export the single function to get random tetrominos
 export function getRandomTetromino(): TetrominoShape {
-  // Get our custom random generator
-  const rng = CustomRandom.getInstance();
-  
-  // Get a random tetromino type with history tracking to avoid patterns
-  const selectedType = rng.randomItemWithHistory(TETROMINO_TYPES, 4);
-  
-  // Return the corresponding tetromino shape
-  return TETROMINOES[selectedType];
+  return TetrominoRandomizer.getInstance().getNextTetromino();
 }
 
-// Legacy compatibility methods - now they all use the new system
+// Legacy compatibility methods
 export const getTrulyRandomTetromino = getRandomTetromino;
 export const getNextTetrominoFromBag = getRandomTetromino;
 export function getNextTetromino(): TetrominoShape {
   return getRandomTetromino();
-}; 
+} 

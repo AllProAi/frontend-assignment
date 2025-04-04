@@ -237,8 +237,12 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       // Check for completed rows
       const clearedGrid = clearCompletedRows(newGrid);
       
-      // Check if we can place the next tetromino
-      if (!state.nextTetromino || isGameOver(clearedGrid, state.nextTetromino)) {
+      // Game is over if:
+      // 1. There's no next tetromino
+      // 2. We can't place the next tetromino (collision)
+      // 3. Blocks have reached the top row of the grid
+      if (!state.nextTetromino || 
+          isGameOver(clearedGrid, state.nextTetromino)) {
         return {
           ...state,
           grid: clearedGrid,

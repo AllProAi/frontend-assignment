@@ -8,16 +8,17 @@ export const createEmptyGrid = (): Grid => {
   );
 };
 
-// Create a new tetromino at the top left of the grid
+// Create a new tetromino centered above the grid
 export const createNewTetromino = (): Tetromino => {
   const shape = getRandomTetromino();
   
   return {
     shape,
     position: {
-      // Position at top left corner
+      // Position at the leftmost side (x=0)
       x: 0,
-      y: 0
+      // Start above the visible grid
+      y: -shape.matrix.length
     }
   };
 };
@@ -33,7 +34,7 @@ export const isValidPosition = (grid: Grid, tetromino: Tetromino): boolean => {
         const gridX = x + col;
         const gridY = y + row;
 
-        // Check grid boundaries
+        // Check horizontal and bottom boundaries
         if (
           gridX < 0 || 
           gridX >= GRID_WIDTH || 
@@ -42,7 +43,7 @@ export const isValidPosition = (grid: Grid, tetromino: Tetromino): boolean => {
           return false;
         }
 
-        // Check collision with other pieces
+        // Check collision with other pieces, but only for cells within the grid
         if (gridY >= 0 && grid[gridY][gridX].filled) {
           return false;
         }
@@ -86,7 +87,7 @@ export const placeTetromino = (grid: Grid, tetromino: Tetromino): Grid => {
         const gridY = y + row;
         const gridX = x + col;
         
-        // Only place if within grid bounds
+        // Only place if within grid bounds - ignore parts above the grid (negative y)
         if (gridY >= 0 && gridY < GRID_HEIGHT && gridX >= 0 && gridX < GRID_WIDTH) {
           newGrid[gridY][gridX] = { filled: true, color };
         }
@@ -121,7 +122,19 @@ export const clearCompletedRows = (grid: Grid): Grid => {
 
 // Check if game is over (can't place new tetromino)
 export const isGameOver = (grid: Grid, tetromino: Tetromino): boolean => {
-  return !isValidPosition(grid, tetromino);
+  // Check if the new tetromino collides with existing blocks
+  // This happens when a piece is locked too high, blocking the spawn area
+  if (!isValidPosition(grid, tetromino)) {
+    return true;
+  }
+  
+  // Also check if any blocks exist in the top row (row 0)
+  // This means the stack has reached the top of the grid
+  if (grid[0].some(cell => cell.filled)) {
+    return true;
+  }
+  
+  return false;
 };
 
 // Check if the tetromino would land in the next step
@@ -169,8 +182,8 @@ export const hasObstacleBelow = (grid: Grid, tetromino: Tetromino): boolean => {
       return true;
     }
     
-    // Check if there's a filled cell below
-    if (gridX >= 0 && gridX < GRID_WIDTH && gridY >= 0 && grid[gridY][gridX].filled) {
+    // Check if there's a filled cell below, but only if we're within the grid
+    if (gridX >= 0 && gridX < GRID_WIDTH && gridY >= 0 && gridY < GRID_HEIGHT && grid[gridY][gridX].filled) {
       return true;
     }
   }
