@@ -1,4 +1,3 @@
-import { TetrominoShape } from '../../models/types';
 import { getRandomTetromino, TETROMINOES } from './tetrominos';
 
 // Track distribution of generated tetrominos

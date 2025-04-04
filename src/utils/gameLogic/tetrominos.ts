@@ -1,5 +1,5 @@
 import { TetrominoShape } from '../../models/types';
-import { TETROMINO_CONFIG } from '../../config/gameConfig';
+
 
 // Define tetromino shapes and colors according to the standard configuration
 export const TETROMINOES: Record<string, TetrominoShape> = {

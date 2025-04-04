@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import { verifyTetrominoDistribution, testPerfectDistribution, verifyAllTetrominosGenerated } from '../utils/gameLogic/tetrominoUtils';
+import { verifyTetrominoDistribution, verifyAllTetrominosGenerated } from '../utils/gameLogic/tetrominoUtils';
 import { createNewTetromino } from '../utils/gameLogic/gameHelpers';
 import { TETROMINOES } from '../utils/gameLogic/tetrominos';
+import { TetrominoShape } from '../models/types';
 import { 
-  gameConfig, 
   GRID_CONFIG, 
   TIMING_CONFIG, 
-  TETROMINO_CONFIG,
   resetToDefaults
 } from '../config/gameConfig';
 
@@ -118,67 +117,6 @@ const TetrominoCell = styled.div<{ filled: boolean; color: string }>`
   height: 15px;
   background-color: ${props => props.filled ? props.color : 'transparent'};
   border: 1px solid ${props => props.filled ? props.color : '#444'};
-`;
-
-// Toggle Switch for random mode
-const ToggleContainer = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-  padding: 10px;
-  background-color: rgba(0, 0, 0, 0.7);
-  border-radius: 5px;
-`;
-
-const ToggleLabel = styled.span`
-  color: white;
-  font-size: 14px;
-  margin-right: 10px;
-`;
-
-const ToggleSwitch = styled.label`
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 24px;
-`;
-
-const ToggleInput = styled.input`
-  opacity: 0;
-  width: 0;
-  height: 0;
-  
-  &:checked + span {
-    background-color: #6e45e2;
-  }
-  
-  &:checked + span:before {
-    transform: translateX(26px);
-  }
-`;
-
-const ToggleSlider = styled.span`
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  transition: .4s;
-  border-radius: 24px;
-  
-  &:before {
-    position: absolute;
-    content: "";
-    height: 16px;
-    width: 16px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-  }
 `;
 
 // New styled components for config panel
@@ -454,13 +392,13 @@ export const DevToolbar: React.FC = () => {
   };
 
   // Render a single tetromino for preview
-  const renderTetromino = (type: string, shape: any) => {
+  const renderTetromino = (type: string, shape: TetrominoShape) => {
     const { matrix, color } = shape;
     
     // Determine grid size (maximum dimension)
     const gridSize = Math.max(
       matrix.length,
-      ...matrix.map((row: any[]) => row.length)
+      ...matrix.map((row: boolean[]) => row.length)
     );
     
     // Create full grid with all cells

@@ -129,16 +129,16 @@ const LoadingBar = styled.div`
 
 const Particle = styled.div<{ index: number }>`
   position: absolute;
-  width: ${props => 4 + Math.random() * 6}px;
-  height: ${props => 4 + Math.random() * 6}px;
-  background: rgba(255, 255, 255, ${props => 0.3 + Math.random() * 0.5});
+  width: ${() => 4 + Math.random() * 6}px;
+  height: ${() => 4 + Math.random() * 6}px;
+  background: rgba(255, 255, 255, ${() => 0.3 + Math.random() * 0.5});
   border-radius: 50%;
-  top: ${props => Math.random() * 100}vh;
-  left: ${props => Math.random() * 100}vw;
-  --tx: ${props => -50 + Math.random() * 100}px;
-  --ty: ${props => -50 + Math.random() * 100}px;
-  animation: ${particleDrift} ${props => 3 + Math.random() * 6}s linear infinite;
-  animation-delay: ${props => Math.random() * 5}s;
+  top: ${() => Math.random() * 100}vh;
+  left: ${() => Math.random() * 100}vw;
+  --tx: ${() => -50 + Math.random() * 100}px;
+  --ty: ${() => -50 + Math.random() * 100}px;
+  animation: ${particleDrift} ${() => 3 + Math.random() * 6}s linear infinite;
+  animation-delay: ${() => Math.random() * 5}s;
 `;
 
 // Generate an array of 30 particles

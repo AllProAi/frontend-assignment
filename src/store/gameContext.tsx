@@ -8,7 +8,6 @@ import {
   placeTetromino,
   clearCompletedRows,
   isGameOver,
-  wouldTetrominoLand,
   hasObstacleBelow
 } from '../utils/gameLogic/gameHelpers';
 import { GameContext } from './gameContextTypes';

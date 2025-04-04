@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { runTetrominoGenerationTest, verifyTetrominoDistribution } from '../utils/gameLogic/tetrominoUtils';
+import { verifyTetrominoDistribution } from '../utils/gameLogic/tetrominoUtils';
 
 const TestContainer = styled.div`
   background-color: rgba(0, 0, 0, 0.5);
